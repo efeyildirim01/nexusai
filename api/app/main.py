@@ -6,7 +6,7 @@ from app.ai.llm import ClaudeLanguageModel, LanguageModel
 from app.config import Settings, get_settings
 from app.db import make_engine, make_sessionmaker
 from app.ratelimit import RateLimiter, make_rate_limiter
-from app.routers import ai, analytics, auth, datasets, users
+from app.routers import ai, analytics, auth, datasets, reports, users
 
 
 def create_app(
@@ -47,6 +47,7 @@ def create_app(
     app.include_router(datasets.router)
     app.include_router(analytics.router)
     app.include_router(ai.router)
+    app.include_router(reports.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:
