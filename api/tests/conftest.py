@@ -60,7 +60,7 @@ def admin_url() -> Iterator[str]:
             returncode=2,
         )
     with tempfile.TemporaryDirectory(prefix="nexusai-pg-", ignore_cleanup_errors=True) as data_dir:
-        server = pgserver.get_server(data_dir, cleanup_mode="stop")  # type: ignore[attr-defined]
+        server = pgserver.get_server(data_dir, cleanup_mode="stop")  # type: ignore[attr-defined,unused-ignore]
         yield server.get_uri()
 
 
