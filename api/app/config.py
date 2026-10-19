@@ -9,6 +9,9 @@ class Settings(BaseSettings):
 
     # Runtime connection. Must be the non-owner role (nexus_app) so that RLS applies.
     database_url: PostgresDsn
+    # AI-generated SQL runs on this connection (nexus_readonly: SELECT on the analytics
+    # view only, read-only transactions). AI querying is disabled when it is not set.
+    readonly_database_url: PostgresDsn | None = None
     # Used only by Alembic. Owns the tables.
     migrations_database_url: PostgresDsn | None = None
 

@@ -2,10 +2,10 @@
 
 import uuid
 from collections.abc import Callable
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import Response
 
 from tests.helpers import Account, invite_and_join, me, signup
 
@@ -21,7 +21,7 @@ def team(client: TestClient) -> dict[str, Account]:
     }
 
 
-Call = Callable[[TestClient, Account], Response]
+Call = Callable[[TestClient, Account], Any]  # the TestClient's response type
 
 ENDPOINTS: dict[str, tuple[Call, str]] = {
     # name: (call, minimum role)

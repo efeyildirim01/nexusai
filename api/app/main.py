@@ -4,7 +4,7 @@ from sqlalchemy import text
 
 from app.config import Settings, get_settings
 from app.db import make_engine, make_sessionmaker
-from app.routers import auth, users
+from app.routers import auth, datasets, users
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,6 +27,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(auth.me_router)
     app.include_router(users.router)
+    app.include_router(datasets.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

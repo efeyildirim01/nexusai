@@ -14,6 +14,13 @@ dependencies = [
     "email-validator>=2.1",
     "argon2-cffi>=23.1",
     "pyjwt>=2.8",
+    "python-multipart>=0.0.9",
+    "pandas>=2.2",
+    "openpyxl>=3.1",
+    "sqlglot>=25",
+    "reportlab>=4.2",
+    "anthropic>=0.40",
+    "redis>=5",
 ]
 
 [project.optional-dependencies]
@@ -22,6 +29,8 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.6",
     "mypy>=1.11",
+    "types-openpyxl",
+    "types-reportlab",
 ]
 # Embedded PostgreSQL 16 binaries for running the test suite without Docker.
 # CI does not install this: it uses the docker-compose Postgres service instead.
@@ -56,7 +65,7 @@ plugins = ["pydantic.mypy"]
 packages = ["app", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["pgserver.*"]
+module = ["pgserver.*", "pandas.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

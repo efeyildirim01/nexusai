@@ -2,11 +2,12 @@
 migrations; these classes only describe it to SQLAlchemy."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, String, Uuid, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, Numeric, String, Uuid, func
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -100,3 +101,54 @@ class AuditLog(Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     ip_address: Mapped[str | None] = mapped_column(INET)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Dataset(Base):
+    __tablename__ = "datasets"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"))
+    name: Mapped[str]
+    filename: Mapped[str]
+    file_format: Mapped[str]
+    status: Mapped[str]
+    total_rows: Mapped[int]
+    imported_rows: Mapped[int]
+    rejected_rows: Mapped[int]
+    column_mapping: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    uploaded_by_id: Mapped[uuid.UUID]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class DatasetIssue(Base):
+    __tablename__ = "dataset_issues"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    tenant_id: Mapped[uuid.UUID]
+    dataset_id: Mapped[uuid.UUID]
+    row_number: Mapped[int | None]
+    column_name: Mapped[str | None]
+    severity: Mapped[str]
+    message: Mapped[str]
+
+
+class SalesRecord(Base):
+    __tablename__ = "sales_records"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    tenant_id: Mapped[uuid.UUID]
+    dataset_id: Mapped[uuid.UUID]
+    order_id: Mapped[str | None]
+    order_date: Mapped[date]
+    customer_id: Mapped[str | None]
+    customer_name: Mapped[str | None]
+    product: Mapped[str]
+    category: Mapped[str | None]
+    region: Mapped[str | None]
+    channel: Mapped[str | None]
+    status: Mapped[str]
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3))
+    unit_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    discount: Mapped[Decimal] = mapped_column(Numeric(5, 4))
+    revenue: Mapped[Decimal] = mapped_column(Numeric(16, 2))
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(16, 2))

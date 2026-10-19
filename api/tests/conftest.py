@@ -27,7 +27,7 @@ from app.config import Settings
 from app.main import create_app
 
 API_DIR = Path(__file__).resolve().parents[1]
-ROLES_SQL = API_DIR.parent / "db" / "init" / "01-roles.sql"
+INIT_DIR = API_DIR.parent / "db" / "init"
 TEST_DB = "nexusai_test"
 
 
@@ -36,6 +36,7 @@ class DatabaseUrls:
     admin: str  # superuser, test setup only
     owner: str  # nexus_owner: migrations, test fixtures that must bypass RLS
     app: str  # nexus_app: what the API uses
+    readonly: str  # nexus_readonly: what AI-generated SQL runs as
 
 
 def _with_credentials(url: str, user: str, password: str, database: str) -> str:
@@ -67,14 +68,24 @@ def admin_url() -> Iterator[str]:
 def db_urls(admin_url: str) -> DatabaseUrls:
     admin_dsn = make_url(admin_url).set(drivername="postgresql")
     with psycopg.connect(admin_dsn.render_as_string(hide_password=False), autocommit=True) as conn:
-        conn.execute(ROLES_SQL.read_text(encoding="utf-8"))
+        conn.execute((INIT_DIR / "01-roles.sql").read_text(encoding="utf-8"))
         conn.execute(f'DROP DATABASE IF EXISTS "{TEST_DB}" WITH (FORCE)')
         conn.execute(f'CREATE DATABASE "{TEST_DB}" OWNER nexus_owner')
+    # Same per-database hardening as docker-compose, minus psql's \connect line.
+    harden = "\n".join(
+        line
+        for line in (INIT_DIR / "03-harden.sql").read_text(encoding="utf-8").splitlines()
+        if not line.startswith("\\")
+    )
+    test_dsn = admin_dsn.set(database=TEST_DB).render_as_string(hide_password=False)
+    with psycopg.connect(test_dsn, autocommit=True) as conn:
+        conn.execute(harden)
 
     urls = DatabaseUrls(
         admin=admin_url,
         owner=_with_credentials(admin_url, "nexus_owner", "nexus_owner_dev", TEST_DB),
         app=_with_credentials(admin_url, "nexus_app", "nexus_app_dev", TEST_DB),
+        readonly=_with_credentials(admin_url, "nexus_readonly", "nexus_readonly_dev", TEST_DB),
     )
 
     config = Config(str(API_DIR / "alembic.ini"))
@@ -114,6 +125,7 @@ def _clean_database(request: pytest.FixtureRequest) -> Iterator[None]:
 def settings(db_urls: DatabaseUrls) -> Settings:
     return Settings(
         database_url=db_urls.app,
+        readonly_database_url=db_urls.readonly,
         jwt_secret="test-secret-" + "x" * 40,
     )
 
