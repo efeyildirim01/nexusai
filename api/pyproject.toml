@@ -59,3 +59,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    "error",
+    # Starlette's TestClient still works with httpx; the replacement package is not needed yet.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
