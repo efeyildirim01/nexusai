@@ -57,6 +57,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]
 "migrations/**" = ["S608"]
+"app/ai/llm.py" = ["S608"]  # prompts that mention SELECT, not queries
 
 [tool.mypy]
 python_version = "3.12"

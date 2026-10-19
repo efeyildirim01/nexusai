@@ -152,3 +152,19 @@ class SalesRecord(Base):
     discount: Mapped[Decimal] = mapped_column(Numeric(5, 4))
     revenue: Mapped[Decimal] = mapped_column(Numeric(16, 2))
     cost: Mapped[Decimal | None] = mapped_column(Numeric(16, 2))
+
+
+class AiQuery(Base):
+    __tablename__ = "ai_queries"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id"))
+    user_id: Mapped[uuid.UUID]
+    source: Mapped[str]
+    question: Mapped[str | None]
+    sql: Mapped[str | None]
+    status: Mapped[str]
+    error: Mapped[str | None]
+    row_count: Mapped[int | None]
+    elapsed_ms: Mapped[int | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
