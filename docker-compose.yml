@@ -1,15 +1,25 @@
-# Local infrastructure for NexusAI. The API and web app run on the host in week 1.
+# NexusAI, full stack.
+#
+#   docker compose up --build            # everything: http://localhost:3000
+#   docker compose up -d postgres redis  # infrastructure only, for local development
+#
+# The passwords here are development defaults. Override them (and NEXUS_JWT_SECRET) through
+# environment variables or an .env file next to this compose file for anything shared.
+x-db-urls: &db-urls
+  NEXUS_DATABASE_URL: postgresql+psycopg://nexus_app:nexus_app_dev@postgres:5432/nexusai
+  NEXUS_READONLY_DATABASE_URL: postgresql+psycopg://nexus_readonly:nexus_readonly_dev@postgres:5432/nexusai
+
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
-      # Runs once, on an empty data directory: creates the owner/app roles and the database.
+      # Runs once, on an empty data directory: roles, database, per-database hardening.
       - ./db/init:/docker-entrypoint-initdb.d:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,6 +37,45 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  # One-off: applies migrations as the schema owner, then exits.
+  migrate:
+    build: ./api
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      NEXUS_MIGRATIONS_DATABASE_URL: postgresql+psycopg://nexus_owner:nexus_owner_dev@postgres:5432/nexusai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: ./api
+    environment:
+      <<: *db-urls
+      NEXUS_REDIS_URL: redis://redis:6379/0
+      NEXUS_JWT_SECRET: ${NEXUS_JWT_SECRET:-dev-only-secret-change-me-dev-only-secret-change-me}
+      NEXUS_ANTHROPIC_API_KEY: ${NEXUS_ANTHROPIC_API_KEY:-}
+      NEXUS_CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    environment:
+      NEXUS_API_URL: http://api:8000
+      # Plain HTTP on localhost. Behind HTTPS in a real deployment, leave this unset.
+      NEXUS_COOKIE_SECURE: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   pgdata:

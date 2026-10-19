@@ -46,8 +46,11 @@ class Filters:
 COMPLETED = S.status == "completed"
 REVENUE = func.coalesce(func.sum(case((COMPLETED, S.revenue), else_=0)), 0)
 COST = func.sum(case((COMPLETED, S.cost)))
-# Lines without an order id count as one order each.
-ORDER_KEY = func.coalesce(S.order_id, cast(S.id, Text))
+# Lines without an order id count as one order each. Distinct counts only need equality, so
+# keys are compared byte-wise (COLLATE "C"): ~5x faster than sorting with the database's
+# linguistic collation, same result (see docs/performance.md).
+ORDER_KEY = func.coalesce(S.order_id, cast(S.id, Text)).collate("C")
+CUSTOMER_KEY = S.customer_id.collate("C")
 
 
 def _f(value: Decimal | float | int | None) -> float:
@@ -60,7 +63,7 @@ def _kpis(session: Session, conds: list[ColumnElement[bool]]) -> dict[str, float
             REVENUE.label("revenue"),
             COST.label("cost"),
             func.count(distinct(case((COMPLETED, ORDER_KEY)))).label("orders"),
-            func.count(distinct(case((COMPLETED, S.customer_id)))).label("customers"),
+            func.count(distinct(case((COMPLETED, CUSTOMER_KEY)))).label("customers"),
             func.coalesce(func.sum(case((COMPLETED, S.quantity), else_=0)), 0).label("units"),
             func.coalesce(func.sum(case((S.status == "returned", S.revenue), else_=0)), 0).label(
                 "returned"

@@ -11,7 +11,12 @@ export const ACCESS_COOKIE = "nx_at";
 export const REFRESH_COOKIE = "nx_rt";
 export const CSRF_HEADER = "x-nexus-csrf";
 
-const secure = process.env.NODE_ENV === "production";
+// Secure cookies by default in production; NEXUS_COOKIE_SECURE=false only for plain-HTTP
+// local stacks such as docker compose on localhost.
+const secure =
+  process.env.NEXUS_COOKIE_SECURE !== undefined
+    ? process.env.NEXUS_COOKIE_SECURE === "true"
+    : process.env.NODE_ENV === "production";
 
 export type TokenPair = {
   access_token: string;
