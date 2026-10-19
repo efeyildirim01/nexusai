@@ -41,8 +41,10 @@ def generate(
         category = rng.choices(list(PRODUCTS), weights=[5, 3, 1])[0]
         product, price, cost = rng.choice(PRODUCTS[category])
         quantity = rng.choices([1, 2, 3, 5, 10], weights=[50, 25, 12, 8, 5])[0]
+        if category == "Services":
+            quantity = 1  # nobody buys ten onboarding packages
         if day == spike_day:
-            quantity *= 12  # the anomaly: a bulk order day
+            quantity *= 25  # the anomaly: a bulk-order day, far outside normal variation
         discount = rng.choice([0, 0, 0, 0.05, 0.1, 0.15])
         status = rng.choices(["completed", "returned", "cancelled"], weights=[92, 5, 3])[0]
         customer_id, customer_name = rng.choice(customers)
