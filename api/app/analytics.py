@@ -176,9 +176,16 @@ def customer_mix(session: Session, filters: Filters) -> dict[str, int]:
     return {"new": int(row.new or 0), "returning": int(row.returning or 0)}
 
 
-def detect_anomalies(series: list[dict[str, Any]], threshold: float = 3.5) -> list[dict[str, Any]]:
+def detect_anomalies(
+    series: list[dict[str, Any]], threshold: float = 3.5, partial_edges: bool = False
+) -> list[dict[str, Any]]:
     """Flag periods whose revenue is far from the rolling median, using the median absolute
-    deviation (robust to the very outliers we are looking for, unlike mean/stddev)."""
+    deviation (robust to the very outliers we are looking for, unlike mean/stddev).
+
+    With weekly or monthly buckets the first and last bucket usually cover only part of a
+    week or month; `partial_edges` leaves them out so they are not reported as drops."""
+    if partial_edges:
+        series = series[1:-1]
     if len(series) < 8:
         return []
     df = pd.DataFrame(series)
@@ -233,7 +240,7 @@ def overview(session: Session, filters: Filters) -> dict[str, Any]:
         "top_customers": _breakdown(session, S.customer_name, conds),
         "status": _status_breakdown(session, conds),
         "customer_mix": customer_mix(session, period),
-        "anomalies": detect_anomalies(series),
+        "anomalies": detect_anomalies(series, partial_edges=grain != "day"),
     }
 
 

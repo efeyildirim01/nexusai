@@ -53,13 +53,15 @@ def template(overview: dict[str, Any]) -> dict[str, Any]:
     if k["return_rate_pct"]:
         sentences.append(f"Returns took {k['return_rate_pct']:.1f}% of gross sales.")
     mix = overview["customer_mix"]
-    if mix["new"] or mix["returning"]:
+    if mix["returning"]:
         sentences.append(
             f"{mix['new']:,} customers bought for the first time and "
             f"{mix['returning']:,} came back."
         )
+    elif mix["new"]:
+        sentences.append(f"{mix['new']:,} customers placed orders.")
     explanations = [
-        f"{a['period']}: revenue of {_money(a['revenue'])} against an expected "
+        f"Revenue of {_money(a['revenue'])} against an expected "
         f"{_money(a['expected'])} ({a['direction']}). Check for bulk orders, promotions, "
         "outages or data-entry errors on that date."
         for a in overview["anomalies"]

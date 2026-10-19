@@ -97,3 +97,12 @@ def test_dashboards_are_tenant_scoped_and_viewer_readable(
     assert overview(client, other)["kpis"]["revenue"] == 0
     viewer = invite_and_join(client, small, "viewer@example.com", "VIEWER")
     assert overview(client, viewer)["kpis"]["revenue"] > 0
+
+
+def test_partial_edge_buckets_are_not_anomalies() -> None:
+    from app.analytics import detect_anomalies
+
+    series = [{"period": f"w{i}", "revenue": 1000.0 + (i % 3) * 10} for i in range(20)]
+    series[-1]["revenue"] = 150.0  # the last, partial week
+    assert detect_anomalies(series)[-1]["period"] == "w19"
+    assert detect_anomalies(series, partial_edges=True) == []
