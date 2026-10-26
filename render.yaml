@@ -17,14 +17,9 @@ databases:
     databaseName: nexusai
     user: nexus_admin
 
+# No Key Value (Redis): Render allows one free instance per workspace and VaultPay uses it.
+# Without NEXUS_REDIS_URL the API falls back to its in-memory AI rate limiter.
 services:
-  - type: keyvalue
-    name: nexusai-redis
-    plan: free
-    region: frankfurt
-    ipAllowList: []  # private network only
-    maxmemoryPolicy: noeviction
-
   - type: web
     name: nexusai-api
     runtime: docker
@@ -41,11 +36,6 @@ services:
         sync: false
       - key: NEXUS_READONLY_DATABASE_URL
         sync: false
-      - key: NEXUS_REDIS_URL
-        fromService:
-          type: keyvalue
-          name: nexusai-redis
-          property: connectionString
       - key: NEXUS_JWT_SECRET
         generateValue: true
       # Optional: without it natural-language questions return 503, everything else works.

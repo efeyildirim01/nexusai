@@ -166,8 +166,8 @@ To enable plain-English questions and AI summaries, set `NEXUS_ANTHROPIC_API_KEY
 
 ### Hosted demo (Render free tier)
 
-`render.yaml` is a Render Blueprint: PostgreSQL 16, Key Value (Redis), the API and the web
-app, all on free plans in Frankfurt. Render's free tier has no superuser, shell or one-off
+`render.yaml` is a Render Blueprint: PostgreSQL 16, the API and the web app, all on free
+plans in Frankfurt. Render's free tier has no superuser, shell or one-off
 jobs, so the database is prepared once from a workstation instead of by `db/init` and the
 `migrate` container:
 
@@ -194,6 +194,10 @@ What is weaker than the Docker setup:
   `app.tenant_id` (the RLS scope) inside a query, so for that one function the SQL
   validator (layer 1 under "AI queries never get unrestricted database access") is the only guard. Every other layer still holds. The script
   checks this and prints a warning.
+- **No Redis.** Render allows one free Key Value instance per workspace and another project
+  uses it, so the AI rate limit falls back to the in-memory limiter. It counts per API
+  worker process (two), so a tenant can get up to twice the configured queries per minute.
+  The Redis limiter is tested in CI only.
 - The free database expires after 30 days and has no backups; free web services sleep after
   15 minutes idle (the first request takes about a minute).
 - Free web services cannot receive private-network traffic, so the web app calls the API
