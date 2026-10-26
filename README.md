@@ -35,7 +35,7 @@ GitHub Actions · Anthropic Claude API
 | PDF report and Excel workbook export | Built and tested (PDF content not visually regression-tested) |
 | Next.js web app: landing, sign-in/up, invite acceptance, dashboard, data, Ask AI, team & audit | Built; lint + type-check + build in CI; flows checked by hand in a browser, no automated UI tests |
 | Backend-for-frontend: tokens only in httpOnly cookies, transparent refresh, CSRF header on writes | Built; checked by hand and by the smoke script |
-| Dockerfiles, full-stack docker compose with a separate migration step | Built; **first run happens in CI** (no Docker on the development machine) |
+| Dockerfiles, full-stack docker compose with a separate migration step | Built; images built and the full stack smoke-tested in CI on every push |
 | CI: ruff, mypy (strict), pytest on PostgreSQL 16 + Redis 7, migration round-trip, web lint/types/build, Docker end-to-end smoke test | Built |
 | Performance benchmark (`docs/performance.md`) | Built and run; it found and fixed two real problems (below) |
 | Hosted deployment (cloud provider, domain, TLS) | **Not done.** Images are ready; no environment has been set up |
@@ -184,7 +184,7 @@ npm run dev                         # http://localhost:3000, expects the API on 
 
 ```bash
 cd api
-pytest                # 147 tests on a real PostgreSQL 16 (1 needs Redis and runs in CI)
+pytest                # real PostgreSQL 16; 148 tests in CI (Redis tests skip without NEXUS_TEST_REDIS_URL)
 ruff check . && ruff format --check . && mypy
 python scripts/benchmark.py
 ```
