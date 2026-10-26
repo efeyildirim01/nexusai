@@ -1,0 +1,70 @@
+# Render Blueprint for the hosted demo (free tier).
+#
+# Render's free tier has no superuser, no shell and no one-off jobs, so the database is
+# prepared from a workstation once the Blueprint has created it:
+#
+#   NEXUS_ADMIN_DATABASE_URL='<External Database URL of nexusai-db>' \
+#     api/.venv/Scripts/python scripts/provision_render.py
+#
+# That script creates the three roles with generated passwords, runs the migrations as
+# nexus_owner and prints the two URLs to paste into nexusai-api's environment. The API
+# itself never receives the owner or admin credentials. See "Hosted demo" in README.md.
+databases:
+  - name: nexusai-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: nexusai
+    user: nexus_admin
+
+services:
+  - type: keyvalue
+    name: nexusai-redis
+    plan: free
+    region: frankfurt
+    ipAllowList: []  # private network only
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: nexusai-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./api
+    dockerfilePath: ./api/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      # nexus_app and nexus_readonly URLs, printed by scripts/provision_render.py.
+      - key: NEXUS_DATABASE_URL
+        sync: false
+      - key: NEXUS_READONLY_DATABASE_URL
+        sync: false
+      - key: NEXUS_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: nexusai-redis
+          property: connectionString
+      - key: NEXUS_JWT_SECRET
+        generateValue: true
+      # Optional: without it natural-language questions return 503, everything else works.
+      - key: NEXUS_ANTHROPIC_API_KEY
+        sync: false
+
+  - type: web
+    name: nexusai-web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./web
+    dockerfilePath: ./web/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "3000"
+      # Free web services cannot receive private-network traffic, so the BFF calls the
+      # API on its public HTTPS URL. Change this if Render gives the API another hostname.
+      # NEXUS_COOKIE_SECURE stays unset: the site is served over HTTPS.
+      - key: NEXUS_API_URL
+        value: https://nexusai-api.onrender.com
